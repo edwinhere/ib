@@ -13,6 +13,7 @@ import qualified Data.ByteString.Builder as B
 import qualified Data.ByteString.Lazy as LBS
 import           Data.Word (Word32)
 import           UnliftIO.Timeout (timeout)
+import           Data.Text (Text)
 
 import IB.Codec.Decoder (decodeMessages)
 import IB.Codec.Encoder (encodeMessages)
@@ -90,6 +91,7 @@ data MessageCollector = MessageCollector
   , mcErrors :: MVar [ErrorInfo]
   , mcCurrentTime :: MVar [UnixTime]
   , mcNextValidId :: MVar [Int]
+  , mcServerTime :: MVar [Text]
   }
 
 newMessageCollector :: IO MessageCollector
@@ -104,6 +106,7 @@ newMessageCollector = do
   mcErrors <- newEmptyMVar
   mcCurrentTime <- newEmptyMVar
   mcNextValidId <- newEmptyMVar
+  mcServerTime <- newEmptyMVar
   return MessageCollector
     { mcHistoricalData = mcHistoricalData
     , mcMarketDepth = mcMarketDepth
@@ -115,6 +118,7 @@ newMessageCollector = do
     , mcErrors = mcErrors
     , mcCurrentTime = mcCurrentTime
     , mcNextValidId = mcNextValidId
+    , mcServerTime = mcServerTime
     }
 
 collectMessage :: MessageCollector -> ServerMessage -> IO ()
@@ -149,6 +153,9 @@ collectMessage mc msg = case msg of
   NextValidId orderId -> do
     existing <- tryTakeMVar (mcNextValidId mc)
     putMVar (mcNextValidId mc) $ maybe [orderId] (++ [orderId]) existing
+  ServerTime time -> do
+    existing <- tryTakeMVar (mcServerTime mc)
+    putMVar (mcServerTime mc) $ maybe [time] (++ [time]) existing
   _ -> return ()
 
 -- Test specifications

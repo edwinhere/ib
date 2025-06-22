@@ -46,6 +46,7 @@ parseById msgId
   | msgId == managedAccts = parseManagedAccounts
   | msgId == nextValidId = parseNextValidId
   | msgId == currentTime = parseCurrentTime
+  | msgId == serverTime = parseServerTime
   | msgId == historicalData = parseHistoricalData
   | msgId == symbolSamples = parseSymbolSamples
   | msgId == tickEFP = parseTickEFP
@@ -308,6 +309,14 @@ parsePnL :: Parser ServerMessage
 parsePnL = do
   void $ many' getField
   return $ PnL $ PnLData 0 0.0 0.0 0.0
+
+-- | Parses a 'ServerTime' message.
+-- Format: [MessageID, Time]
+-- This message appears to be sent during connection setup with a formatted date/time string
+parseServerTime :: Parser ServerMessage
+parseServerTime = do
+  timeStr <- T.decodeUtf8 <$> getField
+  return $ ServerTime timeStr
 
 -- | A helper parser to consume a single null-terminated field from the input.
 getField :: Parser ByteString
