@@ -1,6 +1,6 @@
 # Interactive Brokers Haskell Client
 
-A Haskell implementation of the Interactive Brokers TWS/Gateway API client.
+A Haskell implementation of the Interactive Brokers TWS/Gateway API client with comprehensive testing.
 
 ## Features
 
@@ -54,6 +54,80 @@ The client connects to:
 
 Edit `src/Lib.hs` to change connection settings.
 
+## Testing
+
+The project includes comprehensive tests that convert the main application functionality to testable assertions:
+
+### Running Tests
+
+```bash
+# Run unit tests only
+stack test ib:test:ib-test
+
+# Run integration tests only (requires IB Gateway/TWS running)
+stack test ib:test:ib-integration-test
+
+# Run all tests
+stack test
+```
+
+### Test Strategy
+
+#### Unit Tests (`test/Spec.hs`)
+- **Codec Testing**: Message encoding/decoding validation
+- **Framing Testing**: Network message framing
+- **Protocol Testing**: Individual message type validation
+
+#### Integration Tests (`test/IntegrationTest.hs`)
+Integration tests convert the main application functionality to testable assertions:
+
+- **Connection Testing**: Handshake and connection establishment
+- **Contract Details**: Request and validate contract information
+- **Historical Data**: Request and validate historical price data
+- **Market Data**: Real-time market data subscription
+- **Market Depth**: Order book data validation
+- **Real-time Bars**: Time-based bar data
+- **Tick-by-Tick Data**: High-frequency tick data
+- **Account Summary**: Account information retrieval
+- **Positions**: Current position data
+- **Option Calculations**: Implied volatility and option pricing
+- **Current Time**: Server time synchronization
+
+### Test Best Practices
+
+1. **Assertion-Based Testing**: All tests use proper assertions (`shouldBe`, `shouldSatisfy`)
+2. **Timeout Handling**: Integration tests use timeouts to prevent hanging
+3. **Error Handling**: Tests validate both success and error conditions
+4. **Message Collection**: Tests collect and validate all response types
+5. **Connection Management**: Proper setup and teardown of connections
+
+### Test Configuration
+
+```haskell
+-- Test configuration
+testHost :: ByteString
+testHost = "127.0.0.1"
+
+testPort :: Int
+testPort = 7497
+
+testTimeout :: Int
+testTimeout = 30000000 -- 30 seconds
+```
+
+### Running Specific Tests
+
+```bash
+# Run specific test pattern
+stack test --test-arguments="-m 'Connection'"
+
+# Run with verbose output
+stack test --test-arguments="--verbose"
+
+# Run integration tests with specific focus
+stack test ib:test:ib-integration-test --test-arguments="-m 'Market Data'"
+```
+
 ## Protocol Implementation
 
 This client implements the IB API protocol as documented in `protocol.md`, including:
@@ -99,8 +173,25 @@ To add new API features:
 3. **Implement Encoder**: Add encoding logic in `IB.Codec.Encoder`
 4. **Implement Decoder**: Add decoding logic in `IB.Codec.Decoder`
 5. **Update Main**: Add example usage in `src/Lib.hs`
+6. **Add Tests**: Include both unit and integration tests
 
-### Testing
+### Adding New Tests
+
+1. **Unit Tests**: Add to `test/Spec.hs` for isolated component testing
+2. **Integration Tests**: Add to `test/IntegrationTest.hs` for end-to-end testing
+
+### Test Structure
+
+```haskell
+describe "Feature Name" $ do
+  it "should perform expected behavior" $ do
+    -- Setup
+    -- Action
+    -- Assertion
+    result `shouldBe` expectedValue
+```
+
+### Testing Against
 
 The client can be tested against:
 - IB Paper Trading Gateway

@@ -63,7 +63,18 @@ executables:
 
 tests:
   ib-test:
-    main:                Spec.hs
+    main:                Main.hs
+    source-dirs:         test
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - ib
+    - hspec
+
+  ib-integration-test:
+    main:                IntegrationMain
     source-dirs:         test
     ghc-options:
     - -threaded

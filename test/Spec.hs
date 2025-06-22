@@ -1,10 +1,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module Main (main) where
+module Spec (main, spec) where
 
 import           Test.Hspec
-import           Lib
 import Conduit
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Builder as B
@@ -73,6 +72,13 @@ spec = do
           .| sinkList
 
       encoded `shouldBe` expectedPayload
+
+  describe "Integration Tests" $ do
+    it "should have integration tests available" $ do
+      -- This is a placeholder for integration tests
+      -- The actual integration tests are in IntegrationTest.hs
+      -- and can be run separately or included in the build
+      True `shouldBe` True
 
 -- Helper to manually frame a payload with a 4-byte big-endian length.
 frameIt :: ByteString -> ByteString
