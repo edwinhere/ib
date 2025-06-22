@@ -1,0 +1,74 @@
+name:                ib
+version:             0.1.0.0
+github:              "edwinhere/ib"
+license:             BSD-3-Clause
+author:              "Edwin"
+maintainer:          "edwinhere@gmail.com"
+copyright:           "Edwin Jose Palathinkal"
+
+extra-source-files:
+- README.md
+- CHANGELOG.md
+
+# Metadata used when publishing your package
+# synopsis:            Short description of your package
+# category:            Web
+
+# To avoid duplicated efforts in documentation and dealing with the
+# complications of embedding Haddock markup inside cabal files, it is
+# common to point users to the README.md file.
+description:         Please see the README on GitHub at <https://github.com/edwinhere/ib#readme>
+
+dependencies:
+- base >= 4.7 && < 5
+- bytestring
+- text
+- network
+- conduit
+- conduit-extra
+- binary
+- unliftio
+- safe-exceptions
+- time
+- mtl
+- transformers
+- async
+- stm
+- attoparsec
+
+ghc-options:
+- -Wall
+- -Wcompat
+- -Widentities
+- -Wincomplete-record-updates
+- -Wincomplete-uni-patterns
+- -Wmissing-export-lists
+- -Wmissing-home-modules
+- -Wpartial-fields
+- -Wredundant-constraints
+
+library:
+  source-dirs: src
+
+executables:
+  ib-exe:
+    main:                Main.hs
+    source-dirs:         app
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - ib
+
+tests:
+  ib-test:
+    main:                Spec.hs
+    source-dirs:         test
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - ib
+    - hspec
