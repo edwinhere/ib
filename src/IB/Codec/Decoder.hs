@@ -51,6 +51,14 @@ parseById msgId
   | msgId == tickEFP = parseTickEFP
   | msgId == marketDataType = parseMarketDataType
   | msgId == tickByTick = parseTickByTick
+  | msgId == updateMktDepth = parseMarketDepth
+  | msgId == realTimeBars = parseRealTimeBars
+  | msgId == tickOptionComputation = parseOptionCalculation
+  | msgId == accountSummary = parseAccountSummary
+  | msgId == accountSummaryEnd = parseAccountSummaryEnd
+  | msgId == positionData = parsePosition
+  | msgId == positionEnd = parsePositionEnd
+  | msgId == pnl = parsePnL
   | otherwise = fail $ "Unknown message ID: " ++ show msgId
 
 -- | Parses a 'CurrentTime' message.
@@ -69,7 +77,7 @@ parseTickPrice = do
   _version <- getField
   reqId <- getFieldAsSafeRead 0
   field <- getFieldAsSafeRead (toEnum 0)
-  price <- getFieldAsSafeRead 0.0
+  price <- getFieldAsSafeRead 0
   size <- getFieldAsSafeRead 0
   attribs <- getFieldAsSafeRead 0
   let tick = TickPriceData reqId field price size attribs
@@ -246,6 +254,60 @@ parseTickByTick :: Parser ServerMessage
 parseTickByTick = do
   void $ many' getField
   return TickByTick
+
+-- | Parses a 'MarketDepth' message.
+-- This is a placeholder and simply consumes the message without parsing.
+parseMarketDepth :: Parser ServerMessage
+parseMarketDepth = do
+  void $ many' getField
+  return $ MarketDepth $ MarketDepthData 0 0 Insert Ask 0.0 0
+
+-- | Parses a 'RealTimeBars' message.
+-- This is a placeholder and simply consumes the message without parsing.
+parseRealTimeBars :: Parser ServerMessage
+parseRealTimeBars = do
+  void $ many' getField
+  return $ RealTimeBars $ RealTimeBar 0 0 0.0 0.0 0.0 0.0 0 0.0 0
+
+-- | Parses a 'TickOptionComputation' message.
+-- This is a placeholder and simply consumes the message without parsing.
+parseOptionCalculation :: Parser ServerMessage
+parseOptionCalculation = do
+  void $ many' getField
+  return $ OptionCalculation $ OptionCalculationData 0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
+
+-- | Parses an 'AccountSummary' message.
+-- This is a placeholder and simply consumes the message without parsing.
+parseAccountSummary :: Parser ServerMessage
+parseAccountSummary = do
+  void $ many' getField
+  return $ AccountSummary $ AccountSummaryData 0 "" "" "" ""
+
+-- | Parses an 'AccountSummaryEnd' message.
+parseAccountSummaryEnd :: Parser ServerMessage
+parseAccountSummaryEnd = do
+  void $ many' getField
+  return $ AccountSummaryEnd 0
+
+-- | Parses a 'Position' message.
+-- This is a placeholder and simply consumes the message without parsing.
+parsePosition :: Parser ServerMessage
+parsePosition = do
+  void $ many' getField
+  return $ Position $ PositionData "" (Contract Nothing "" STK "" 0.0 Nothing "" "" "" "" "" "" False "" "" "") 0.0 0.0
+
+-- | Parses a 'PositionEnd' message.
+parsePositionEnd :: Parser ServerMessage
+parsePositionEnd = do
+  void $ many' getField
+  return PositionEnd
+
+-- | Parses a 'PnL' message.
+-- This is a placeholder and simply consumes the message without parsing.
+parsePnL :: Parser ServerMessage
+parsePnL = do
+  void $ many' getField
+  return $ PnL $ PnLData 0 0.0 0.0 0.0
 
 -- | A helper parser to consume a single null-terminated field from the input.
 getField :: Parser ByteString

@@ -22,6 +22,29 @@ module IB.Protocol.Types
   , MarketDataRequest(..)
   , TickPriceData(..)
   , TickSizeData(..)
+    -- * New Market Depth Types
+  , MarketDepthRequest(..)
+  , MarketDepthData(..)
+  , MarketDepthOperation(..)
+  , MarketDepthSide(..)
+    -- * New Real-time Bars Types
+  , RealTimeBarsRequest(..)
+  , RealTimeBar(..)
+    -- * New Tick-by-Tick Types
+  , TickByTickRequest(..)
+  , TickByTickData(..)
+  , TickByTickType(..)
+    -- * New Option Calculation Types
+  , OptionCalculationRequest(..)
+  , OptionCalculationType(..)
+  , OptionCalculationData(..)
+    -- * New Account and Position Types
+  , AccountSummaryRequest(..)
+  , AccountSummaryData(..)
+  , PositionRequest(..)
+  , PositionData(..)
+  , PnLRequest(..)
+  , PnLData(..)
   ) where
 
 import Data.ByteString (ByteString)
@@ -84,6 +107,174 @@ data ContractDetails = ContractDetails
   -- Add more fields from the protocol as needed
   } deriving (Show, Eq)
 
+-- * Market Depth Types
+
+-- | Market depth operation types
+data MarketDepthOperation
+  = Insert
+  | Update
+  | Delete
+  deriving (Show, Eq, Read, Enum, Bounded)
+
+-- | Market depth side
+data MarketDepthSide
+  = Ask
+  | Bid
+  deriving (Show, Eq, Read, Enum, Bounded)
+
+-- | Request for market depth (order book) data
+data MarketDepthRequest = MarketDepthRequest
+  { mktDepthRequestId :: RequestId
+  , mktDepthContract :: Contract
+  , mktDepthNumRows :: Int
+  , mktDepthIsSmartDepth :: Bool
+  } deriving (Show, Eq)
+
+-- | Market depth data update
+data MarketDepthData = MarketDepthData
+  { mktDepthDataRequestId :: RequestId
+  , mktDepthDataPosition :: Int
+  , mktDepthDataOperation :: MarketDepthOperation
+  , mktDepthDataSide :: MarketDepthSide
+  , mktDepthDataPrice :: Double
+  , mktDepthDataSize :: Int
+  } deriving (Show, Eq)
+
+-- * Real-time Bars Types
+
+-- | Request for real-time bars
+data RealTimeBarsRequest = RealTimeBarsRequest
+  { realTimeBarsRequestId :: RequestId
+  , realTimeBarsContract :: Contract
+  , realTimeBarsBarSize :: Int -- Currently only 5 is supported
+  , realTimeBarsWhatToShow :: Text -- "TRADES", "BID", "ASK", "MIDPOINT"
+  , realTimeBarsUseRth :: Bool
+  } deriving (Show, Eq)
+
+-- | Real-time bar data
+data RealTimeBar = RealTimeBar
+  { realTimeBarRequestId :: RequestId
+  , realTimeBarTime :: UnixTime
+  , realTimeBarOpen :: Double
+  , realTimeBarHigh :: Double
+  , realTimeBarLow :: Double
+  , realTimeBarClose :: Double
+  , realTimeBarVolume :: Int
+  , realTimeBarWap :: Double
+  , realTimeBarCount :: Int
+  } deriving (Show, Eq)
+
+-- * Tick-by-Tick Types
+
+-- | Tick-by-tick data types
+data TickByTickType
+  = TickLast
+  | TickAllLast
+  | TickBidAsk
+  | TickMidPoint
+  deriving (Show, Eq, Read, Enum, Bounded)
+
+-- | Request for tick-by-tick data
+data TickByTickRequest = TickByTickRequest
+  { tickByTickRequestId :: RequestId
+  , tickByTickContract :: Contract
+  , tickByTickType :: TickByTickType
+  , tickByTickNumberOfTicks :: Int -- 0 for unlimited
+  , tickByTickIgnoreSize :: Bool
+  } deriving (Show, Eq)
+
+-- | Tick-by-tick data
+data TickByTickData = TickByTickData
+  { tickByTickDataRequestId :: RequestId
+  , tickByTickDataType :: TickByTickType
+  , tickByTickDataTime :: UnixTime
+  , tickByTickDataPrice :: Maybe Double
+  , tickByTickDataSize :: Maybe Int
+  , tickByTickDataBidPrice :: Maybe Double
+  , tickByTickDataAskPrice :: Maybe Double
+  , tickByTickDataBidSize :: Maybe Int
+  , tickByTickDataAskSize :: Maybe Int
+  , tickByTickDataMidPoint :: Maybe Double
+  , tickByTickDataExchange :: Maybe Text
+  , tickByTickDataSpecialConditions :: Maybe Text
+  } deriving (Show, Eq)
+
+-- * Option Calculation Types
+
+-- | Type of option calculation
+data OptionCalculationType
+  = CalcImpliedVolatility
+  | CalcOptionPrice
+  deriving (Show, Eq, Read, Enum, Bounded)
+
+-- | Request for option calculations
+data OptionCalculationRequest = OptionCalculationRequest
+  { optionCalcRequestId :: RequestId
+  , optionCalcType :: OptionCalculationType
+  , optionCalcContract :: Contract
+  , optionCalcOptionPrice :: Double -- For implied vol calculation
+  , optionCalcUnderlyingPrice :: Double
+  , optionCalcVolatility :: Double -- For option price calculation
+  } deriving (Show, Eq)
+
+-- | Option calculation result
+data OptionCalculationData = OptionCalculationData
+  { optionCalcDataRequestId :: RequestId
+  , optionCalcDataImpliedVolatility :: Double
+  , optionCalcDataDelta :: Double
+  , optionCalcDataOptionPrice :: Double
+  , optionCalcDataPvDividend :: Double
+  , optionCalcDataGamma :: Double
+  , optionCalcDataVega :: Double
+  , optionCalcDataTheta :: Double
+  , optionCalcDataUnderlyingPrice :: Double
+  } deriving (Show, Eq)
+
+-- * Account and Position Types
+
+-- | Request for account summary
+data AccountSummaryRequest = AccountSummaryRequest
+  { accountSummaryRequestId :: RequestId
+  , accountSummaryGroup :: Text -- "All" for all accounts
+  , accountSummaryTags :: Text -- Comma-separated list of tags
+  } deriving (Show, Eq)
+
+-- | Account summary data
+data AccountSummaryData = AccountSummaryData
+  { accountSummaryDataRequestId :: RequestId
+  , accountSummaryDataAccount :: Text
+  , accountSummaryDataTag :: Text
+  , accountSummaryDataValue :: Text
+  , accountSummaryDataCurrency :: Text
+  } deriving (Show, Eq)
+
+-- | Request for positions
+data PositionRequest = PositionRequest
+  deriving (Show, Eq)
+
+-- | Position data
+data PositionData = PositionData
+  { positionAccount :: Text
+  , positionContract :: Contract
+  , positionPosition :: Double
+  , positionAverageCost :: Double
+  } deriving (Show, Eq)
+
+-- | Request for PnL
+data PnLRequest = PnLRequest
+  { pnlRequestId :: RequestId
+  , pnlAccount :: Text
+  , pnlModelCode :: Text
+  } deriving (Show, Eq)
+
+-- | PnL data
+data PnLData = PnLData
+  { pnlDataRequestId :: RequestId
+  , pnlDataDailyPnL :: Double
+  , pnlDataUnrealizedPnL :: Double
+  , pnlDataRealizedPnL :: Double
+  } deriving (Show, Eq)
+
 -- * Message Types
 
 -- | A type-safe representation of a message ID.
@@ -99,6 +290,22 @@ data ClientMessage
   | ReqManagedAccts
   | ReqHistoricalData HistoricalDataRequest
   | ReqMktData MarketDataRequest
+  | ReqMktDepth MarketDepthRequest
+  | CancelMktDepth RequestId Bool -- RequestId, isSmartDepth
+  | ReqRealTimeBars RealTimeBarsRequest
+  | CancelRealTimeBars RequestId
+  | ReqTickByTickData TickByTickRequest
+  | CancelTickByTickData RequestId
+  | ReqCalcImpliedVolatility OptionCalculationRequest
+  | ReqCalcOptionPrice OptionCalculationRequest
+  | CancelCalculateImpliedVolatility RequestId
+  | CancelCalculateOptionPrice RequestId
+  | ReqAccountSummary AccountSummaryRequest
+  | CancelAccountSummary RequestId
+  | ReqPositions PositionRequest
+  | CancelPositions
+  | ReqPnL PnLRequest
+  | CancelPnL RequestId
   -- Add other client messages here
   deriving (Show, Eq)
 
@@ -118,6 +325,14 @@ data ServerMessage
   | SymbolSamples RequestId
   | MarketDataType RequestId Int
   | TickByTick
+  | MarketDepth MarketDepthData
+  | RealTimeBars RealTimeBar
+  | OptionCalculation OptionCalculationData
+  | AccountSummary AccountSummaryData
+  | AccountSummaryEnd RequestId
+  | Position PositionData
+  | PositionEnd
+  | PnL PnLData
   -- Add other server messages here
   deriving (Show, Eq)
 

@@ -106,6 +106,95 @@ runIbClient = do
           liftIO $ putStrLn "--> ReqMktData EUR.USD"
           yield reqMkt
 
+          -- Request market depth for EUR.USD
+          let mktDepthReq = MarketDepthRequest
+                { mktDepthRequestId = 400
+                , mktDepthContract = eurUsd
+                , mktDepthNumRows = 5
+                , mktDepthIsSmartDepth = False
+                }
+          liftIO $ putStrLn "--> ReqMktDepth EUR.USD"
+          yield (ReqMktDepth mktDepthReq)
+
+          -- Request real-time bars for EUR.USD
+          let realTimeBarsReq = RealTimeBarsRequest
+                { realTimeBarsRequestId = 500
+                , realTimeBarsContract = eurUsd
+                , realTimeBarsBarSize = 5 -- Only 5 seconds is supported
+                , realTimeBarsWhatToShow = "MIDPOINT"
+                , realTimeBarsUseRth = True
+                }
+          liftIO $ putStrLn "--> ReqRealTimeBars EUR.USD"
+          yield (ReqRealTimeBars realTimeBarsReq)
+
+          -- Request tick-by-tick data for EUR.USD
+          let tickByTickReq = TickByTickRequest
+                { tickByTickRequestId = 600
+                , tickByTickContract = eurUsd
+                , tickByTickType = TickBidAsk
+                , tickByTickNumberOfTicks = 0 -- Unlimited
+                , tickByTickIgnoreSize = False
+                }
+          liftIO $ putStrLn "--> ReqTickByTickData EUR.USD"
+          yield (ReqTickByTickData tickByTickReq)
+
+          -- Request account summary
+          let accountSummaryReq = AccountSummaryRequest
+                { accountSummaryRequestId = 700
+                , accountSummaryGroup = "All"
+                , accountSummaryTags = "NetLiquidation,TotalCashValue"
+                }
+          liftIO $ putStrLn "--> ReqAccountSummary"
+          yield (ReqAccountSummary accountSummaryReq)
+
+          -- Request positions
+          liftIO $ putStrLn "--> ReqPositions"
+          yield (ReqPositions PositionRequest)
+
+          -- Example option calculation (for AAPL options)
+          let aaplOption = Contract
+                { conId = Nothing
+                , symbol = "AAPL"
+                , secType = OPT
+                , lastTradeDateOrContractMonth = "20241220" -- December 20, 2024
+                , strike = 150.0
+                , right = Just Call
+                , multiplier = "100"
+                , exchange = "SMART"
+                , primaryExchange = "CBOE"
+                , currency = "USD"
+                , localSymbol = ""
+                , tradingClass = ""
+                , includeExpired = False
+                , secIdType = ""
+                , secId = ""
+                , issuerId = ""
+                }
+
+          -- Calculate implied volatility for a given option price
+          let impliedVolReq = OptionCalculationRequest
+                { optionCalcRequestId = 800
+                , optionCalcType = CalcImpliedVolatility
+                , optionCalcContract = aaplOption
+                , optionCalcOptionPrice = 5.0 -- Option price
+                , optionCalcUnderlyingPrice = 155.0 -- Current stock price
+                , optionCalcVolatility = 0.0 -- Not used for implied vol calculation
+                }
+          liftIO $ putStrLn "--> ReqCalcImpliedVolatility AAPL Call"
+          yield (ReqCalcImpliedVolatility impliedVolReq)
+
+          -- Calculate option price for a given volatility
+          let optionPriceReq = OptionCalculationRequest
+                { optionCalcRequestId = 801
+                , optionCalcType = CalcOptionPrice
+                , optionCalcContract = aaplOption
+                , optionCalcOptionPrice = 0.0 -- Not used for price calculation
+                , optionCalcUnderlyingPrice = 155.0 -- Current stock price
+                , optionCalcVolatility = 0.25 -- 25% volatility
+                }
+          liftIO $ putStrLn "--> ReqCalcOptionPrice AAPL Call"
+          yield (ReqCalcOptionPrice optionPriceReq)
+
           -- Request the current time every 5 seconds
           forever (do
             yield ReqCurrentTime
@@ -128,4 +217,22 @@ printSink' = awaitForever $ \msg -> do
     HistoricalDataResponse _ bars -> do
       liftIO . putStrLn $ "Received " ++ show (length bars) ++ " historical bars."
       -- liftIO . print $ head bars -- Optionally print the first bar
+    MarketDepth _ -> do
+      liftIO . putStrLn $ "Received market depth update."
+    RealTimeBars _ -> do
+      liftIO . putStrLn $ "Received real-time bar."
+    TickByTick -> do
+      liftIO . putStrLn $ "Received tick-by-tick data."
+    AccountSummary _ -> do
+      liftIO . putStrLn $ "Received account summary."
+    AccountSummaryEnd _ -> do
+      liftIO . putStrLn $ "Account summary complete."
+    Position _ -> do
+      liftIO . putStrLn $ "Received position data."
+    PositionEnd -> do
+      liftIO . putStrLn $ "Positions complete."
+    PnL _ -> do
+      liftIO . putStrLn $ "Received PnL data."
+    OptionCalculation _ -> do
+      liftIO . putStrLn $ "Received option calculation."
     _ -> yield msg
