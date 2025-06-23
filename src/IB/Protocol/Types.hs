@@ -312,6 +312,7 @@ data ClientMessage
 -- | Represents a message received from the server.
 data ServerMessage
   = CurrentTime UnixTime
+  | ServerTime Text -- Server time message sent during connection setup
   | NextValidId Int
   | ManagedAccounts [Text]
   | ContractData RequestId ContractDetails
