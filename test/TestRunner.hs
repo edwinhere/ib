@@ -1,15 +1,15 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module TestRunner (main) where
+module Main where
 
-import           Test.Hspec
+import           Test.Hspec.Runner
 import           Spec (spec)
 import qualified IntegrationTest
 
 main :: IO ()
-main = hspec $ do
+main = hspecWith defaultConfig { configPrintCpuTime = True } $ do
   -- Run unit tests
   spec
-  
+
   -- Run integration tests
   IntegrationTest.spec 

@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module Spec (main, spec) where
+module Spec (spec) where
 
 import           Test.Hspec
 import Conduit
@@ -13,9 +13,6 @@ import IB.Codec.Decoder (decodeMessages)
 import IB.Codec.Encoder (encodeMessages)
 import IB.Network.Framing (unframe)
 import IB.Protocol.Types (ClientMessage (..), ServerMessage (..))
-
-main :: IO ()
-main = hspec spec
 
 spec :: Spec
 spec = do

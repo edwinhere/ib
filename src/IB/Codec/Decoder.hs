@@ -55,6 +55,7 @@ parseById msgId
   | msgId == updateMktDepth = parseMarketDepth
   | msgId == realTimeBars = parseRealTimeBars
   | msgId == tickOptionComputation = parseOptionCalculation
+  | msgId == tickOptionComputation45 = parseOptionCalculation
   | msgId == accountSummary = parseAccountSummary
   | msgId == accountSummaryEnd = parseAccountSummaryEnd
   | msgId == positionData = parsePosition

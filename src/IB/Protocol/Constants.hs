@@ -74,6 +74,7 @@ module IB.Protocol.Constants
   , tickEFP
   , marketDataType
   , serverTime
+  , tickOptionComputation45
   ) where
 
 import IB.Protocol.Types (MessageId(..))
@@ -300,3 +301,6 @@ marketDataType = MessageId 58
 -- Server time message sent during connection setup
 serverTime :: MessageId
 serverTime = MessageId 187
+
+tickOptionComputation45 :: MessageId
+tickOptionComputation45 = MessageId 45
