@@ -221,7 +221,7 @@ printSink' = awaitForever $ \msg -> do
       liftIO . putStrLn $ "Received market depth update."
     RealTimeBars _ -> do
       liftIO . putStrLn $ "Received real-time bar."
-    TickByTick -> do
+    TickByTick _ -> do
       liftIO . putStrLn $ "Received tick-by-tick data."
     AccountSummary _ -> do
       liftIO . putStrLn $ "Received account summary."

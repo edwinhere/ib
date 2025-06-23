@@ -289,7 +289,7 @@ pnl :: MessageId
 pnl = MessageId 95
 
 tickByTick :: MessageId
-tickByTick = MessageId 97
+tickByTick = MessageId 99
 
 tickEFP :: MessageId
 tickEFP = MessageId 47

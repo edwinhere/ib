@@ -250,11 +250,45 @@ parseSymbolSamples = do
   return $ SymbolSamples reqId
 
 -- | Parses a 'TickByTick' message.
--- This is a placeholder and simply consumes the message without parsing.
 parseTickByTick :: Parser ServerMessage
 parseTickByTick = do
-  void $ many' getField
-  return TickByTick
+  reqId <- getFieldAsSafeRead 0
+  tickTypeInt <- getFieldAsSafeRead 0
+  time <- getFieldAsSafeRead 0
+
+  let tickType = case tickTypeInt :: Int of
+        1 -> TickLast
+        2 -> TickAllLast
+        3 -> TickBidAsk
+        4 -> TickMidPoint
+        _ -> error $ "Unknown tick by tick type: " ++ show tickTypeInt
+
+  tick <- case tickType of
+    TickLast -> do
+      price <- getFieldAsMaybe
+      size <- getFieldAsMaybe
+      _tickAttribLast <- getField
+      exchange <- Just . T.decodeUtf8 <$> getField
+      specialConditions <- Just . T.decodeUtf8 <$> getField
+      return $ TickByTickData reqId tickType time price size Nothing Nothing Nothing Nothing Nothing exchange specialConditions
+    TickAllLast -> do
+      price <- getFieldAsMaybe
+      size <- getFieldAsMaybe
+      _tickAttribLast <- getField
+      exchange <- Just . T.decodeUtf8 <$> getField
+      specialConditions <- Just . T.decodeUtf8 <$> getField
+      return $ TickByTickData reqId tickType time price size Nothing Nothing Nothing Nothing Nothing exchange specialConditions
+    TickBidAsk -> do
+      bidPrice <- getFieldAsMaybe
+      askPrice <- getFieldAsMaybe
+      bidSize <- getFieldAsMaybe
+      askSize <- getFieldAsMaybe
+      _tickAttribBidAsk <- getField
+      return $ TickByTickData reqId tickType time Nothing Nothing bidPrice askPrice bidSize askSize Nothing Nothing Nothing
+    TickMidPoint -> do
+      midPoint <- getFieldAsMaybe
+      return $ TickByTickData reqId tickType time Nothing Nothing Nothing Nothing Nothing Nothing midPoint Nothing Nothing
+  return $ TickByTick tick
 
 -- | Parses a 'MarketDepth' message.
 -- This is a placeholder and simply consumes the message without parsing.
@@ -322,10 +356,10 @@ parseServerTime = do
 getField :: Parser ByteString
 getField = A.takeTill (== '\0') <* satisfy (== '\0')
 
--- | Helper to get a field and apply a pure reading function.
--- getFieldAs :: (String -> a) -> Parser a
--- getFieldAs f = f . C8.unpack <$> getField
+-- | Helper to get a field and safely apply a reading function, returning a Maybe.
+getFieldAsMaybe :: Read a => Parser (Maybe a)
+getFieldAsMaybe = readMaybe . C8.unpack <$> getField
 
 -- | Helper to get a field and safely apply a reading function, with a default value.
 getFieldAsSafeRead :: Read a => a -> Parser a
-getFieldAsSafeRead def = fromMaybe def . readMaybe . C8.unpack <$> getField
+getFieldAsSafeRead def = fromMaybe def <$> getFieldAsMaybe

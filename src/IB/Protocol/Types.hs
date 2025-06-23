@@ -325,7 +325,7 @@ data ServerMessage
   | TickEFP RequestId
   | SymbolSamples RequestId
   | MarketDataType RequestId Int
-  | TickByTick
+  | TickByTick TickByTickData
   | MarketDepth MarketDepthData
   | RealTimeBars RealTimeBar
   | OptionCalculation OptionCalculationData

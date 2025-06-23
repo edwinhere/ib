@@ -11,7 +11,6 @@ import           Data.Conduit.Network (appSink, appSource, clientSettings, runTC
 import           Data.ByteString (ByteString)
 import qualified Data.ByteString.Builder as B
 import qualified Data.ByteString.Lazy as LBS
-import           Data.Word (Word32)
 import           UnliftIO.Timeout (timeout)
 import           Data.Text (Text)
 
@@ -96,29 +95,29 @@ data MessageCollector = MessageCollector
 
 newMessageCollector :: IO MessageCollector
 newMessageCollector = do
-  mcHistoricalData <- newEmptyMVar
-  mcMarketDepth <- newEmptyMVar
-  mcRealTimeBars <- newEmptyMVar
-  mcTickByTick <- newEmptyMVar
-  mcAccountSummary <- newEmptyMVar
-  mcPositions <- newEmptyMVar
-  mcOptionCalculations <- newEmptyMVar
-  mcErrors <- newEmptyMVar
-  mcCurrentTime <- newEmptyMVar
-  mcNextValidId <- newEmptyMVar
-  mcServerTime <- newEmptyMVar
+  mcHistoricalData' <- newEmptyMVar
+  mcMarketDepth' <- newEmptyMVar
+  mcRealTimeBars' <- newEmptyMVar
+  mcTickByTick' <- newEmptyMVar
+  mcAccountSummary' <- newEmptyMVar
+  mcPositions' <- newEmptyMVar
+  mcOptionCalculations' <- newEmptyMVar
+  mcErrors' <- newEmptyMVar
+  mcCurrentTime' <- newEmptyMVar
+  mcNextValidId' <- newEmptyMVar
+  mcServerTime' <- newEmptyMVar
   return MessageCollector
-    { mcHistoricalData = mcHistoricalData
-    , mcMarketDepth = mcMarketDepth
-    , mcRealTimeBars = mcRealTimeBars
-    , mcTickByTick = mcTickByTick
-    , mcAccountSummary = mcAccountSummary
-    , mcPositions = mcPositions
-    , mcOptionCalculations = mcOptionCalculations
-    , mcErrors = mcErrors
-    , mcCurrentTime = mcCurrentTime
-    , mcNextValidId = mcNextValidId
-    , mcServerTime = mcServerTime
+    { mcHistoricalData = mcHistoricalData'
+    , mcMarketDepth = mcMarketDepth'
+    , mcRealTimeBars = mcRealTimeBars'
+    , mcTickByTick = mcTickByTick'
+    , mcAccountSummary = mcAccountSummary'
+    , mcPositions = mcPositions'
+    , mcOptionCalculations = mcOptionCalculations'
+    , mcErrors = mcErrors'
+    , mcCurrentTime = mcCurrentTime'
+    , mcNextValidId = mcNextValidId'
+    , mcServerTime = mcServerTime'
     }
 
 collectMessage :: MessageCollector -> ServerMessage -> IO ()
@@ -132,9 +131,9 @@ collectMessage mc msg = case msg of
   RealTimeBars barData -> do
     existing <- tryTakeMVar (mcRealTimeBars mc)
     putMVar (mcRealTimeBars mc) $ maybe [barData] (++ [barData]) existing
-  TickByTick -> do
-    -- TickByTick is just a marker, actual data comes separately
-    return ()
+  TickByTick tickData -> do
+    existing <- tryTakeMVar (mcTickByTick mc)
+    putMVar (mcTickByTick mc) $ maybe [tickData] (++ [tickData]) existing
   AccountSummary summaryData -> do
     existing <- tryTakeMVar (mcAccountSummary mc)
     putMVar (mcAccountSummary mc) $ maybe [summaryData] (++ [summaryData]) existing

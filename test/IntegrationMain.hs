@@ -1,4 +1,4 @@
-module IntegrationMain where
+module IntegrationMain (main) where
 
 import Test.Hspec
 import qualified IntegrationTest
