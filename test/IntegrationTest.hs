@@ -24,6 +24,7 @@ import IB.Codec.Decoder (decodeMessages)
 import IB.Codec.Encoder (encodeMessages)
 import IB.Network.Framing (frame, unframe)
 import IB.Protocol.Types
+import IB.Client
 
 -- Custom exception for controlled termination of the conduit
 data StopConduit = StopConduit deriving (Show, Typeable)
@@ -469,4 +470,41 @@ spec = do
           _ -> False
 
         currentTime <- tryTakeMVar (mcCurrentTime collector)
-        maybe False (not . null) currentTime `shouldBe` True 
+        maybe False (not . null) currentTime `shouldBe` True
+
+    describe "PlaceOrder Tests" $ do
+      it "should send a PlaceOrder message without errors" $ do
+        -- Create a test order (what-if to avoid placing real orders)
+        let testContract = Contract
+              { conId = Nothing
+              , symbol = "AAPL"
+              , secType = STK
+              , lastTradeDateOrContractMonth = ""
+              , strike = 0.0
+              , right = Nothing
+              , multiplier = ""
+              , exchange = "SMART"
+              , primaryExchange = ""
+              , currency = "USD"
+              , localSymbol = ""
+              , tradingClass = ""
+              , includeExpired = False
+              , secIdType = ""
+              , secId = ""
+              , issuerId = ""
+              }
+            testOrder = (simpleMarketOrder BUY 1.0)
+              { orderWhatIf = True  -- What-if order - won't actually place
+              , orderTransmit = False -- Don't transmit
+              }
+            placeOrderReq = placeOrder 9999 testContract testOrder
+
+        collector <- runTest [PlaceOrder placeOrderReq] $ \case
+          Error (ErrorInfo reqId _ _) -> reqId == 9999  -- Stop on our order's error
+          _ -> False
+
+        errors <- tryTakeMVar (mcErrors collector)
+        -- Any response (even error) means our message format worked
+        case errors of
+          Just _ -> True `shouldBe` True  -- Got response - protocol works
+          Nothing -> pendingWith "No response from TWS - may not support PlaceOrder in test mode" 

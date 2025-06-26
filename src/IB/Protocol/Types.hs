@@ -45,6 +45,25 @@ module IB.Protocol.Types
   , PositionData(..)
   , PnLRequest(..)
   , PnLData(..)
+    -- * Order Types
+  , Order(..)
+  , OrderAction(..)
+  , OrderType(..)
+  , TimeInForce(..)
+  , PlaceOrderRequest(..)
+  , defaultOrder
+    -- * Server Version Constants
+  , minServerVerNotHeld
+  , minServerVerOrderContainer
+  , minServerVerPlaceOrderConId
+  , minServerVerTradingClass
+  , minServerVerSecIdType
+  , minServerVerFractionalPositions
+  , minServerVerScaleOrders
+  , minServerVerHedgeOrders
+  , minServerVerAlgoOrders
+  , minServerVerOrderSolicited
+  , minServerVerModelsSupport
   ) where
 
 import Data.ByteString (ByteString)
@@ -57,6 +76,42 @@ type RequestId = Int
 type ServerVersion = Int
 type ConnectionTime = ByteString
 type UnixTime = Int
+
+-- * Server Version Constants (from official TWS API)
+
+-- | Server version constants for conditional field inclusion
+minServerVerNotHeld :: ServerVersion
+minServerVerNotHeld = 44
+
+minServerVerOrderContainer :: ServerVersion  
+minServerVerOrderContainer = 145
+
+minServerVerPlaceOrderConId :: ServerVersion
+minServerVerPlaceOrderConId = 46
+
+minServerVerTradingClass :: ServerVersion
+minServerVerTradingClass = 68
+
+minServerVerSecIdType :: ServerVersion
+minServerVerSecIdType = 45
+
+minServerVerFractionalPositions :: ServerVersion
+minServerVerFractionalPositions = 160
+
+minServerVerScaleOrders :: ServerVersion
+minServerVerScaleOrders = 20
+
+minServerVerHedgeOrders :: ServerVersion
+minServerVerHedgeOrders = 53
+
+minServerVerAlgoOrders :: ServerVersion
+minServerVerAlgoOrders = 54
+
+minServerVerOrderSolicited :: ServerVersion
+minServerVerOrderSolicited = 104
+
+minServerVerModelsSupport :: ServerVersion
+minServerVerModelsSupport = 121
 
 -- * Core Data Structures
 
@@ -275,6 +330,169 @@ data PnLData = PnLData
   , pnlDataRealizedPnL :: Double
   } deriving (Show, Eq)
 
+-- * Order Types
+
+-- | Order action (BUY or SELL)
+data OrderAction
+  = BUY
+  | SELL
+  deriving (Show, Eq, Read, Enum, Bounded)
+
+-- | Order type
+data OrderType
+  = MKT    -- Market order
+  | LMT    -- Limit order
+  | STP    -- Stop order
+  | STP_LMT -- Stop-limit order
+  | REL    -- Relative order
+  | TRAIL  -- Trailing stop order
+  | BOX_TOP -- Box top order
+  | FIX_PEGGED -- Fixed pegged order
+  | LIT    -- Lit order
+  | LMT_PLUS_MKT -- Limit plus market order
+  | LOC    -- Limit on close order
+  | MIT    -- Market if touched order
+  | MKT_PRT -- Market with protection order
+  | MOC    -- Market on close order
+  | MTL    -- Market to limit order
+  | PASSV_REL -- Passive relative order
+  | PEG_BENCH -- Pegged to benchmark order
+  | PEG_MID -- Pegged to midpoint order
+  | PEG_MKT -- Pegged to market order
+  | PEG_PRIM -- Pegged to primary order
+  | PEG_STK -- Pegged to stock order  
+  | REL_PLUS_LMT -- Relative plus limit order
+  | REL_PLUS_MKT -- Relative plus market order
+  | SNAP_MID -- Snap midpoint order
+  | SNAP_MKT -- Snap market order
+  | SNAP_PRIM -- Snap primary order
+  | STP_PRT -- Stop with protection order
+  | TRAIL_LIMIT -- Trailing stop limit order
+  | TRAIL_LIT -- Trailing stop lit order
+  | TRAIL_LMT_PLUS_MKT -- Trailing stop limit plus market order
+  | TRAIL_MIT -- Trailing stop market if touched order
+  | TRAIL_REL_PLUS_MKT -- Trailing stop relative plus market order
+  | VOL -- Volatility order
+  | VWAP -- Volume weighted average price order
+  deriving (Show, Eq, Read)
+
+-- | Time in force
+data TimeInForce
+  = DAY  -- Day order
+  | GTC  -- Good till canceled
+  | IOC  -- Immediate or cancel
+  | GTD  -- Good till date
+  | OPG  -- At the opening
+  | FOK  -- Fill or kill
+  | DTC  -- Day till canceled
+  deriving (Show, Eq, Read, Enum, Bounded)
+
+-- | Order data structure
+data Order = Order
+  { orderAction :: OrderAction
+  , orderTotalQuantity :: Double -- Changed to Double for fractional shares
+  , orderType :: OrderType
+  , orderLmtPrice :: Maybe Double -- Nothing means Double.MAX_VALUE
+  , orderAuxPrice :: Maybe Double -- Nothing means Double.MAX_VALUE
+  , orderTif :: TimeInForce
+  , orderOcaGroup :: Text
+  , orderAccount :: Text  
+  , orderOpenClose :: Text
+  , orderOrigin :: Int -- 0=Customer, 1=Firm
+  , orderRef :: Text
+  , orderTransmit :: Bool
+  , orderParentId :: Maybe Int
+  , orderBlockOrder :: Bool
+  , orderSweepToFill :: Bool
+  , orderDisplaySize :: Maybe Int
+  , orderTriggerMethod :: Int
+  , orderOutsideRth :: Bool
+  , orderHidden :: Bool
+  , orderGoodAfterTime :: Text
+  , orderGoodTillDate :: Text
+  , orderOverridePercentageConstraints :: Bool
+  , orderRule80A :: Text
+  , orderAllOrNone :: Bool
+  , orderMinQty :: Maybe Int
+  , orderPercentOffset :: Maybe Double
+  , orderTrailStopPrice :: Maybe Double
+  , orderTrailingPercent :: Maybe Double
+  , orderFaGroup :: Text
+  , orderFaProfile :: Text
+  , orderFaMethod :: Text
+  , orderFaPercentage :: Text
+  , orderModelCode :: Text
+  , orderShortSaleSlot :: Int
+  , orderDesignatedLocation :: Text
+  , orderExemptCode :: Int
+  , orderOcaType :: Int
+  , orderSettlingFirm :: Text
+  , orderClearingAccount :: Text
+  , orderClearingIntent :: Text
+  , orderNotHeld :: Bool
+  , orderWhatIf :: Bool
+  , orderSolicited :: Bool
+  , orderRandomizeSize :: Bool
+  , orderRandomizePrice :: Bool
+  } deriving (Show, Eq)
+
+-- | Default order with sensible defaults
+defaultOrder :: OrderAction -> Double -> OrderType -> Order
+defaultOrder action quantity oType = Order
+  { orderAction = action
+  , orderTotalQuantity = quantity
+  , orderType = oType
+  , orderLmtPrice = Nothing
+  , orderAuxPrice = Nothing
+  , orderTif = DAY
+  , orderOcaGroup = ""
+  , orderAccount = ""
+  , orderOpenClose = ""
+  , orderOrigin = 0
+  , orderRef = ""
+  , orderTransmit = True
+  , orderParentId = Nothing
+  , orderBlockOrder = False
+  , orderSweepToFill = False
+  , orderDisplaySize = Nothing
+  , orderTriggerMethod = 0
+  , orderOutsideRth = False
+  , orderHidden = False
+  , orderGoodAfterTime = ""
+  , orderGoodTillDate = ""
+  , orderOverridePercentageConstraints = False
+  , orderRule80A = ""
+  , orderAllOrNone = False
+  , orderMinQty = Nothing
+  , orderPercentOffset = Nothing
+  , orderTrailStopPrice = Nothing
+  , orderTrailingPercent = Nothing
+  , orderFaGroup = ""
+  , orderFaProfile = ""
+  , orderFaMethod = ""
+  , orderFaPercentage = ""
+  , orderModelCode = ""
+  , orderShortSaleSlot = 0
+  , orderDesignatedLocation = ""
+  , orderExemptCode = -1
+  , orderOcaType = 0
+  , orderSettlingFirm = ""
+  , orderClearingAccount = ""
+  , orderClearingIntent = ""
+  , orderNotHeld = False
+  , orderWhatIf = False
+  , orderSolicited = False
+  , orderRandomizeSize = False
+  , orderRandomizePrice = False
+  }
+
+-- | Request to place an order
+data PlaceOrderRequest = PlaceOrderRequest
+  { placeOrderId :: Int
+  , placeOrderContract :: Contract
+  , placeOrderOrder :: Order
+  } deriving (Show, Eq)
+
 -- * Message Types
 
 -- | A type-safe representation of a message ID.
@@ -306,6 +524,7 @@ data ClientMessage
   | CancelPositions
   | ReqPnL PnLRequest
   | CancelPnL RequestId
+  | PlaceOrder PlaceOrderRequest
   -- Add other client messages here
   deriving (Show, Eq)
 

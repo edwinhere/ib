@@ -13,6 +13,7 @@ import IB.Codec.Decoder (decodeMessages)
 import IB.Codec.Encoder (encodeMessages)
 import IB.Network.Framing (unframe)
 import IB.Protocol.Types (ClientMessage (..), ServerMessage (..))
+import qualified PlaceOrderTest
 
 spec :: Spec
 spec = do
@@ -70,6 +71,9 @@ spec = do
 
       encoded `shouldBe` expectedPayload
 
+  describe "PlaceOrder Tests" $ do
+    PlaceOrderTest.spec
+    
   describe "Integration Tests" $ do
     it "should have integration tests available" $ do
       -- This is a placeholder for integration tests

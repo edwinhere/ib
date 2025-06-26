@@ -299,6 +299,125 @@ messageBuilder (CancelPnL reqId) =
   putField (messageIdToBuilder cancelPnl) <>
   putFieldS reqId
 
+-- Place Order - Updated to match official Python API exactly
+messageBuilder (PlaceOrder req) =
+  buildPlaceOrderMessage 187 req  -- Assume modern server version 187 for now
+
+-- | Build PlaceOrder message with proper server version checking
+buildPlaceOrderMessage :: ServerVersion -> PlaceOrderRequest -> B.Builder
+buildPlaceOrderMessage serverVer req =
+  let c = placeOrderContract req
+      o = placeOrderOrder req
+      -- Determine version field based on server version
+      version = if serverVer < minServerVerNotHeld then 27 else 45
+  in
+  putField (messageIdToBuilder placeOrder) <>
+  -- Version field (conditionally included)
+  (if serverVer < minServerVerOrderContainer
+   then putFieldS version
+   else mempty) <>
+  putFieldS (placeOrderId req) <>
+  -- Contract fields with conditional inclusion
+  (if serverVer >= minServerVerPlaceOrderConId
+   then putFieldS (fromMaybe 0 (conId c))
+   else mempty) <>
+  putFieldT (symbol c) <>
+  putFieldS (secType c) <>
+  putFieldT (lastTradeDateOrContractMonth c) <>
+  putFieldS (strike c) <>
+  putField (maybe mempty (B.string7 . show) (right c)) <>
+  putFieldT (multiplier c) <>
+  putFieldT (exchange c) <>
+  putFieldT (primaryExchange c) <>
+  putFieldT (currency c) <>
+  putFieldT (localSymbol c) <>
+  (if serverVer >= minServerVerTradingClass
+   then putFieldT (tradingClass c)
+   else mempty) <>
+  (if serverVer >= minServerVerSecIdType
+   then putFieldT (secIdType c) <> putFieldT (secId c)
+   else mempty) <>
+  -- Main order fields
+  putFieldS (orderAction o) <>
+  (if serverVer >= minServerVerFractionalPositions
+   then putFieldS (orderTotalQuantity o)  -- Send as string for fractional shares
+   else putFieldS (round (orderTotalQuantity o) :: Int)) <> -- Send as int for older servers
+  putFieldS (orderType o) <>
+  putField (maybe "" (B.string7 . show) (orderLmtPrice o)) <> -- Empty string for MAX_VALUE
+  putField (maybe "" (B.string7 . show) (orderAuxPrice o)) <> -- Empty string for MAX_VALUE
+  -- Extended order fields
+  putFieldS (orderTif o) <>
+  putFieldT (orderOcaGroup o) <>
+  putFieldT (orderAccount o) <>
+  putFieldT (orderOpenClose o) <>
+  putFieldS (orderOrigin o) <>
+  putFieldT (orderRef o) <>
+  putFieldS (if orderTransmit o then 1 :: Int else 0) <>
+  putFieldS (fromMaybe 0 (orderParentId o)) <>
+  putFieldS (if orderBlockOrder o then 1 :: Int else 0) <>
+  putFieldS (if orderSweepToFill o then 1 :: Int else 0) <>
+  putFieldS (fromMaybe 0 (orderDisplaySize o)) <>
+  putFieldS (orderTriggerMethod o) <>
+  putFieldS (if orderOutsideRth o then 1 :: Int else 0) <>
+  putFieldS (if orderHidden o then 1 :: Int else 0) <>
+  -- Combo legs - empty for non-BAG orders
+  putField "" <> -- sharesAllocation (deprecated, always empty)
+  putField "" <> -- discretionaryAmt (MAX_VALUE -> empty)
+  putFieldT (orderGoodAfterTime o) <>
+  putFieldT (orderGoodTillDate o) <>
+  putFieldT (orderFaGroup o) <>
+  putFieldT (orderFaMethod o) <>
+  putFieldT (orderFaPercentage o) <>
+  putFieldT (orderModelCode o) <>
+  putFieldS (orderShortSaleSlot o) <>
+  putFieldT (orderDesignatedLocation o) <>
+  putFieldS (orderExemptCode o) <>
+  putFieldS (orderOcaType o) <>
+  putFieldT (orderRule80A o) <>
+  putFieldT (orderSettlingFirm o) <>
+  putFieldS (if orderAllOrNone o then 1 :: Int else 0) <>
+  putField (maybe "" (B.string7 . show) (orderMinQty o)) <> -- Empty string for MAX_VALUE
+  putField (maybe "" (B.string7 . show) (orderPercentOffset o)) <> -- Empty string for MAX_VALUE
+  putFieldS (0 :: Int) <> -- auctionStrategy (default 0)
+  putField "" <> -- startingPrice (MAX_VALUE -> empty)
+  putField "" <> -- stockRefPrice (MAX_VALUE -> empty)
+  putField "" <> -- delta (MAX_VALUE -> empty)
+  putField "" <> -- stockRangeLower (MAX_VALUE -> empty)
+  putField "" <> -- stockRangeUpper (MAX_VALUE -> empty)
+  putFieldS (if orderOverridePercentageConstraints o then 1 :: Int else 0) <>
+  -- Volatility order fields (all MAX_VALUE/defaults)
+  putField "" <> -- volatility (MAX_VALUE -> empty)
+  putField "" <> -- volatilityType (MAX_VALUE -> empty)
+  putField "" <> -- deltaNeutralOrderType (empty)
+  putField "" <> -- deltaNeutralAuxPrice (MAX_VALUE -> empty)
+  putFieldS (0 :: Int) <> -- continuousUpdate (default 0)
+  putField "" <> -- referencePriceType (MAX_VALUE -> empty)
+  -- Scale order fields
+  putField (maybe "" (B.string7 . show) (orderTrailStopPrice o)) <>
+  putField (maybe "" (B.string7 . show) (orderTrailingPercent o)) <>
+  putField "" <> -- scaleInitLevelSize (MAX_VALUE -> empty)
+  putField "" <> -- scaleSubsLevelSize (MAX_VALUE -> empty)
+  putField "" <> -- scalePriceIncrement (MAX_VALUE -> empty)
+  -- Advanced fields with conditional inclusion
+  (if serverVer >= minServerVerHedgeOrders
+   then putField "" <> putField "" -- hedgeType, hedgeParam (empty)
+   else mempty) <>
+  putFieldS (0 :: Int) <> -- optOutSmartRouting (false)
+  putFieldT (orderClearingAccount o) <>
+  putFieldT (orderClearingIntent o) <>
+  (if serverVer >= minServerVerNotHeld
+   then putFieldS (if orderNotHeld o then 1 :: Int else 0)
+   else mempty) <>
+  (if serverVer >= minServerVerAlgoOrders
+   then putField "" <> putField "" -- algoStrategy, algoId (empty)
+   else mempty) <>
+  putFieldS (if orderWhatIf o then 1 :: Int else 0) <>
+  (if serverVer >= minServerVerOrderSolicited
+   then putFieldS (if orderSolicited o then 1 :: Int else 0)
+   else mempty) <>
+  putFieldS (if orderRandomizeSize o then 1 :: Int else 0) <>
+  putFieldS (if orderRandomizePrice o then 1 :: Int else 0)
+
 -- | A helper function to create a null-terminated 'Builder' from another 'Builder'.
 putField :: B.Builder -> B.Builder
 putField b = b <> B.word8 0
